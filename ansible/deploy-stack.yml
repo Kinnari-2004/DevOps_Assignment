@@ -1,0 +1,66 @@
+---
+- name: Deploy application stack to Swarm
+  hosts: manager
+  become: yes
+  vars:
+    docker_image: "{{ lookup('env', 'DOCKER_IMAGE') | default('devops_web:latest', true) }}"
+  tasks:
+    - name: Create deployment directory
+      file:
+        path: /home/ubuntu/devops-app
+        state: directory
+        owner: ubuntu
+        group: ubuntu
+        mode: '0755'
+
+    - name: Copy docker-compose.yml
+      copy:
+        src: ../docker/docker-compose.yml
+        dest: /home/ubuntu/devops-app/docker-compose.yml
+        owner: ubuntu
+        group: ubuntu
+        mode: '0644'
+
+    - name: Copy init.sql
+      copy:
+        src: ../docker/init.sql
+        dest: /home/ubuntu/devops-app/init.sql
+        owner: ubuntu
+        group: ubuntu
+        mode: '0644'
+
+    - name: Remove existing stack if present
+      command: docker stack rm devops_app
+      failed_when: false
+      changed_when: false
+
+    - name: Wait for stack removal
+      pause:
+        seconds: 10
+
+    - name: Deploy stack to Swarm
+      shell: |
+        export DOCKER_IMAGE={{ docker_image }}
+        docker stack deploy -c /home/ubuntu/devops-app/docker-compose.yml devops_app
+      args:
+        chdir: /home/ubuntu/devops-app
+
+    - name: Wait for services to start
+      pause:
+        seconds: 15
+
+    - name: List running services
+      command: docker service ls
+      register: service_list
+
+    - name: Display services
+      debug:
+        var: service_list.stdout_lines
+
+    - name: Check web service replicas
+      command: docker service ps devops_app_web
+      register: web_replicas
+
+    - name: Display web replicas
+      debug:
+        var: web_replicas.stdout_lines

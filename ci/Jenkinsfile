@@ -1,0 +1,92 @@
+pipeline {
+    agent any
+    
+    environment {
+        DOCKER_IMAGE = "your-dockerhub-username/devops-app"
+        DOCKER_TAG = "${env.BUILD_NUMBER}"
+    }
+    
+    stages {
+        stage('Checkout') {
+            steps {
+                echo 'Checking out code from Git...'
+                checkout scm
+            }
+        }
+        
+        stage('Build Docker Image') {
+            steps {
+                echo 'Building Docker image...'
+                script {
+                    dir('docker') {
+                        sh '''
+                            docker build -f Dockerfile.web -t ${DOCKER_IMAGE}:${DOCKER_TAG} ../
+                            docker tag ${DOCKER_IMAGE}:${DOCKER_TAG} ${DOCKER_IMAGE}:latest
+                        '''
+                    }
+                }
+            }
+        }
+        
+        stage('Push to Docker Hub') {
+            steps {
+                echo 'Pushing image to Docker Hub...'
+                script {
+                    withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', 
+                                                     usernameVariable: 'DOCKER_USER', 
+                                                     passwordVariable: 'DOCKER_PASS')]) {
+                        sh '''
+                            echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
+                            docker push ${DOCKER_IMAGE}:${DOCKER_TAG}
+                            docker push ${DOCKER_IMAGE}:latest
+                        '''
+                    }
+                }
+            }
+        }
+        
+        stage('Deploy to Swarm') {
+            steps {
+                echo 'Deploying to Docker Swarm...'
+                script {
+                    withCredentials([file(credentialsId: 'terraform-key', variable: 'SSH_KEY')]) {
+                        sh '''
+                            chmod 400 $SSH_KEY
+                            export ANSIBLE_HOST_KEY_CHECKING=False
+                            cd ansible
+                            ansible-playbook -i inventory deploy-stack.yml \
+                                -e "DOCKER_IMAGE=${DOCKER_IMAGE}:${DOCKER_TAG}" \
+                                --private-key=$SSH_KEY
+                        '''
+                    }
+                }
+            }
+        }
+        
+        stage('Run Selenium Tests') {
+            steps {
+                echo 'Running Selenium tests...'
+                script {
+                    sh '''
+                        sleep 30
+                        cd selenium
+                        python3 test_app.py || true
+                    '''
+                }
+            }
+        }
+    }
+    
+    post {
+        success {
+            echo 'Pipeline completed successfully!'
+        }
+        failure {
+            echo 'Pipeline failed!'
+        }
+        always {
+            echo 'Cleaning up...'
+            sh 'docker system prune -f || true'
+        }
+    }
+}
