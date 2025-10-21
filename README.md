@@ -37,3 +37,10 @@ ansible-playbook -i inventory deploy-stack.yml
 
 ## CI/CD Pipeline
 Jenkins automatically builds and deploys on every push to ITA775 branch.
+
+OUTPUT:
+<img width="1919" height="879" alt="Screenshot 2025-10-21 143305" src="https://github.com/user-attachments/assets/9d620947-17a0-4e86-8e41-165d973a968a" />
+<img width="1918" height="885" alt="Screenshot 2025-10-21 143533" src="https://github.com/user-attachments/assets/85fa0804-78d7-4911-9ab4-c1e9dba35e2a" />
+<img width="1919" height="760" alt="Screenshot 2025-10-21 143620" src="https://github.com/user-attachments/assets/ae130403-c326-469b-8595-fec72bc63f22" />
+
+
