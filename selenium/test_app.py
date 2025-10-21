@@ -7,9 +7,9 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
 # Configuration
-APP_URL = "http://MANAGER_IP:8000"  # Replace with actual manager IP
-TEST_USERNAME = "ITA700"
-TEST_PASSWORD = "2022PE0000"
+APP_URL = "http://34.230.229.232:8000"  # Replace with actual manager IP
+TEST_USERNAME = "ITA775"
+TEST_PASSWORD = "2022PE0624"
 
 def setup_driver():
     """Setup headless Firefox driver"""
