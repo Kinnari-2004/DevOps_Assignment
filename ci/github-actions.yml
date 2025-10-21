@@ -3,9 +3,7 @@ name: DevOps CI/CD Pipeline
 on:
   push:
     branches:
-      - main
-      - ITA*
-      - ITB*
+      - ITA775
 
 jobs:
   build-and-deploy:
